@@ -1,0 +1,1142 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Haikyuu Fan App — Protótipo</title>
+<style>
+:root{
+  --motion-instant:120ms; --motion-fast:200ms; --motion-standard:350ms; --motion-emphasis:750ms;
+  --ease-snap:cubic-bezier(0.2,0.8,0.2,1); --ease-sport:cubic-bezier(0.4,0,0.2,1); --ease-elastic:cubic-bezier(0.34,1.56,0.64,1);
+  --primary:#FF6B00; --primary-dark:#CC5500; --primary-light:#FF8833;
+  --bg-dark:#0F1015; --bg-card:#181A20; --text-main:#FFFFFF; --text-sub:#A0A5B5; --accent:#FFD700;
+  --border-color:rgba(255,255,255,.1);
+  --sat:env(safe-area-inset-top,0px); --sab:env(safe-area-inset-bottom,0px);
+}
+.theme-karasuno{--primary:#FF6B00;--primary-dark:#CC5500;--primary-light:#FF8833;}
+.theme-nekoma{--primary:#E51429;--primary-dark:#B30012;--primary-light:#FF4D5E;}
+.theme-aoba{--primary:#00A88F;--primary-dark:#007A68;--primary-light:#33C4AD;}
+.theme-shiratorizawa{--primary:#800080;--primary-dark:#580058;--primary-light:#A626A6;}
+*{box-sizing:border-box;margin:0;padding:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;-webkit-tap-highlight-color:transparent;user-select:none;}
+html,body{height:100%;}
+body{background:#000;display:flex;justify-content:center;align-items:center;min-height:100vh;color:var(--text-main);overflow:hidden;
+  padding-top:var(--sat);padding-bottom:var(--sab);}
+.device-frame{width:100%;max-width:420px;height:100vh;max-height:900px;background:var(--bg-dark);border-radius:0;position:relative;overflow:hidden;display:flex;flex-direction:column;transition:border-color var(--motion-standard) var(--ease-sport);}
+@media (max-width:459px){ .device-frame{width:100%;max-width:none;} }
+@media (min-width:460px){ .device-frame{border-radius:44px;height:844px;box-shadow:0 25px 50px -12px rgba(0,0,0,.7),0 0 0 12px #222;} }
+.interactive{cursor:pointer;transition:transform var(--motion-instant) var(--ease-snap),filter var(--motion-fast) ease;will-change:transform;position:relative;overflow:hidden;}
+.interactive:active{transform:scale(.95)!important;}
+.ripple{position:absolute;border-radius:50%;background:rgba(255,255,255,.3);transform:scale(0);animation:ripple-effect 400ms linear;pointer-events:none;}
+@keyframes ripple-effect{to{transform:scale(4);opacity:0;}}
+.particle{position:absolute;pointer-events:none;border-radius:50%;animation:particle-fly 600ms ease-out forwards;z-index:3000;}
+@keyframes particle-fly{0%{transform:translate(0,0) scale(1);opacity:1;}100%{transform:translate(var(--dx),var(--dy)) scale(0);opacity:0;}}
+.app-screen{flex:1;position:relative;overflow-y:auto;overflow-x:hidden;display:flex;flex-direction:column;padding-bottom:70px;scroll-behavior:smooth;}
+.app-screen::-webkit-scrollbar{display:none;}
+.notification-container{position:absolute;top:calc(10px + var(--sat));left:12px;right:12px;z-index:1000;display:flex;flex-direction:column;gap:8px;pointer-events:none;}
+.toast{background:var(--bg-card);border:1px solid var(--primary);border-radius:16px;padding:12px 16px;box-shadow:0 10px 30px rgba(0,0,0,.5);display:flex;align-items:center;gap:12px;pointer-events:auto;transform:translateY(-100px);opacity:0;animation:toast-in var(--motion-standard) var(--ease-elastic) forwards;position:relative;overflow:hidden;}
+@keyframes toast-in{to{transform:translateY(0);opacity:1;}}
+.toast.toast-out{animation:toast-out var(--motion-fast) var(--ease-sport) forwards;}
+@keyframes toast-out{to{transform:translateX(120%);opacity:0;}}
+.toast-progress{position:absolute;bottom:0;left:0;height:3px;background:var(--primary);width:100%;animation:toast-progress 4000ms linear forwards;}
+@keyframes toast-progress{to{width:0%;}}
+.bottom-nav{position:absolute;bottom:0;left:0;right:0;height:65px;background:rgba(24,26,32,.95);backdrop-filter:blur(10px);display:flex;justify-content:space-around;align-items:center;border-top:1px solid var(--border-color);z-index:500;padding-bottom:var(--sab);}
+.nav-item{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;color:var(--text-sub);font-size:10px;gap:4px;position:relative;}
+.nav-item.active{color:var(--primary);}
+.nav-item svg{width:22px;height:22px;fill:currentColor;transition:transform var(--motion-fast) var(--ease-elastic);}
+.nav-item.active svg{transform:translateY(-2px) scale(1.1);}
+.nav-indicator{position:absolute;top:0;height:3px;width:25%;background:var(--primary);border-radius:0 0 4px 4px;transition:transform var(--motion-standard) var(--ease-sport),background-color var(--motion-standard);}
+.view-section{display:none;flex-direction:column;width:100%;min-height:100%;opacity:0;animation:view-in var(--motion-standard) var(--ease-sport) forwards;}
+.view-section.active{display:flex;}
+@keyframes view-in{from{opacity:0;transform:translateY(12px);}to{opacity:1;transform:translateY(0);}}
+.stagger-item{opacity:0;transform:translateY(20px);animation:stagger-slide var(--motion-standard) var(--ease-sport) forwards;}
+@keyframes stagger-slide{to{opacity:1;transform:translateY(0);}}
+
+#splash-screen{position:absolute;inset:0;background:#050508;z-index:2000;display:flex;flex-direction:column;justify-content:center;align-items:center;overflow:hidden;}
+.court-lines{position:absolute;width:280px;height:400px;border:2px solid rgba(255,107,0,.2);top:50%;left:50%;transform:translate(-50%,-50%) rotateX(60deg) rotateZ(-15deg);}
+.court-lines::before{content:'';position:absolute;top:50%;left:0;right:0;height:2px;background:rgba(255,107,0,.3);}
+.hinata-svg{width:120px;height:160px;position:absolute;bottom:250px;left:-120px;}
+.volleyball{width:32px;height:32px;background:radial-gradient(circle at 30% 30%,#FFF,#FF6B00 60%,#0055A5);border-radius:50%;position:absolute;box-shadow:0 0 15px rgba(255,107,0,.8);top:50%;left:50%;transform:translate(-50%,-50%) scale(0);}
+.splash-title{position:absolute;bottom:120px;font-size:26px;font-weight:900;letter-spacing:1.5px;color:#FFF;text-shadow:0 0 20px var(--primary);opacity:0;text-align:center;padding:0 20px;}
+.splash-sub{position:absolute;bottom:95px;font-size:11px;color:var(--text-sub);opacity:0;}
+.skip-splash{position:absolute;top:calc(20px + var(--sat));right:20px;background:rgba(255,255,255,.1);border:none;color:#FFF;padding:6px 14px;border-radius:20px;font-size:12px;backdrop-filter:blur(5px);z-index:10;}
+.shake{animation:screen-shake 250ms cubic-bezier(.36,.07,.19,.97) both;}
+@keyframes screen-shake{10%,90%{transform:translate3d(-2px,1px,0);}20%,80%{transform:translate3d(3px,-2px,0);}30%,50%,70%{transform:translate3d(-5px,3px,0);}40%,60%{transform:translate3d(5px,-3px,0);}}
+
+.hero-banner{height:170px;margin:16px;border-radius:24px;background:linear-gradient(135deg,var(--primary-dark),var(--bg-card));position:relative;overflow:hidden;display:flex;flex-direction:column;justify-content:flex-end;padding:20px;border:1px solid var(--border-color);}
+.hero-bg-ball{position:absolute;right:-20px;top:-20px;width:160px;height:160px;border-radius:50%;background:rgba(255,255,255,.04);border:2px dashed rgba(255,255,255,.1);animation:spin 20s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg);}}
+.section-title{font-size:17px;font-weight:700;margin:16px 16px 8px 16px;display:flex;justify-content:space-between;align-items:center;}
+.cards-scroll-x{display:flex;gap:12px;overflow-x:auto;margin:0 16px;padding:0 0 8px;scroll-snap-type:x mandatory;}
+.cards-scroll-x::-webkit-scrollbar{display:none;}
+.home-card{flex:0 0 130px;min-width:130px;background:var(--bg-card);border-radius:16px;padding:12px;border:1px solid var(--border-color);scroll-snap-align:start;}
+.home-badge{width:100%;height:78px;border-radius:12px;margin-bottom:8px;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:22px;background:#2A2D37;color:var(--primary);border:2px solid var(--primary);}
+
+.tabs-bar{display:flex;padding:10px 16px;gap:8px;overflow-x:auto;border-bottom:1px solid var(--border-color);}
+.tabs-bar::-webkit-scrollbar{display:none;}
+.tab-btn{padding:8px 16px;border-radius:20px;background:var(--bg-card);color:var(--text-sub);border:1px solid var(--border-color);font-size:13px;font-weight:600;white-space:nowrap;}
+.tab-btn.active{background:var(--primary);color:#FFF;border-color:var(--primary);}
+
+.court-wrap{margin:16px;}
+.mini-court{background:linear-gradient(180deg,rgba(255,255,255,.05),rgba(255,255,255,.02));border:2px solid var(--primary);border-radius:14px;position:relative;display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(2,1fr);gap:6px;padding:10px;}
+.mini-court::before{content:'';position:absolute;left:10px;right:10px;top:50%;height:2px;background:rgba(255,255,255,.15);}
+.court-pos{border:1px dashed var(--border-color);border-radius:10px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;padding:6px 2px;min-height:64px;background:rgba(0,0,0,.15);}
+.court-pos .cp-badge{width:30px;height:30px;border-radius:8px;background:#2A2D37;border:2px solid var(--primary);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:12px;color:var(--primary);}
+.court-pos .cp-name{font-size:9.5px;font-weight:700;text-align:center;line-height:1.2;}
+.court-pos .cp-role{font-size:8.5px;color:var(--text-sub);}
+.libero-strip{margin-top:10px;display:flex;align-items:center;gap:10px;background:rgba(255,255,255,.03);border:1px solid var(--border-color);border-radius:12px;padding:8px 12px;}
+.libero-strip .cp-badge{width:34px;height:34px;border-radius:9px;background:#2A2D37;border:2px solid var(--accent);color:var(--accent);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13px;}
+
+.player-card{background:var(--bg-card);margin:0 16px 12px 16px;border-radius:18px;padding:12px;display:flex;align-items:center;gap:16px;border:1px solid var(--border-color);position:relative;overflow:hidden;}
+.player-avatar{width:56px;height:56px;border-radius:14px;background:#2A2D37;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:18px;color:var(--primary);border:2px solid var(--primary);flex-shrink:0;}
+.player-avatar.photo-wrap{overflow:hidden;position:relative;}
+.player-avatar .player-photo{width:100%;height:100%;object-fit:cover;display:block;}
+.photo-fallback{display:flex;width:100%;height:100%;align-items:center;justify-content:center;}
+.profile-photo{position:absolute;left:20px;bottom:20px;width:72px;height:72px;border-radius:20px;overflow:hidden;border:2px solid var(--primary);background:#2A2D37;z-index:1;}
+.profile-photo .player-photo{width:100%;height:100%;object-fit:cover;display:block;}
+.profile-header>div:last-child{position:relative;z-index:2;margin-left:86px;}
+.home-badge.photo-wrap{overflow:hidden;position:relative;}
+.home-badge .player-photo{width:100%;height:100%;object-fit:cover;display:block;}
+
+.fav-btn{position:absolute;top:12px;right:12px;background:none;border:none;color:var(--text-sub);font-size:18px;}
+.profile-fav-btn{position:absolute;top:calc(16px + var(--sat));right:16px;background:rgba(0,0,0,.3);border:1px solid rgba(255,255,255,.18);color:#FFF;width:34px;height:34px;border-radius:10px;font-size:18px;line-height:1;}
+.profile-fav-btn.active{color:#FFD700;border-color:#FFD700;}
+.fav-btn.active{color:#FFD700;transform:scale(1.15);}
+
+.profile-header{min-height:210px;background:linear-gradient(to bottom,var(--primary-dark),var(--bg-dark));position:relative;display:flex;align-items:flex-end;padding:20px;padding-top:calc(20px + var(--sat));}
+.profile-num{position:absolute;right:20px;top:calc(20px + var(--sat));font-size:74px;font-weight:900;opacity:.15;color:#FFF;}
+.stat-bar-bg{height:8px;background:rgba(255,255,255,.1);border-radius:4px;overflow:hidden;margin-top:4px;}
+.stat-bar-fill{height:100%;background:var(--primary);width:0%;transition:width 1s var(--ease-sport);}
+.player-stats{background:#111827;border-radius:4px;padding:0 0 2px 0;margin-bottom:20px;}
+.player-stats-title{font-size:11px;font-weight:800;letter-spacing:.4px;color:#8d96a8;text-transform:uppercase;margin-bottom:8px;}
+.stat-row{display:grid;grid-template-columns:88px 1fr 26px;align-items:center;gap:8px;min-height:18px;font-size:12px;color:#8d96a8;}
+.stat-row + .stat-row{margin-top:5px;}
+.stat-track{height:8px;background:#202c40;border-radius:6px;overflow:hidden;}
+.stat-fill{height:100%;width:0%;background:var(--primary);border-radius:6px;transition:width 700ms var(--ease-sport);}
+.stat-value{text-align:right;color:#d8deea;font-size:12px;font-weight:800;}
+.clipboard-view{padding-bottom:18px;background:#080d1d;min-height:100%;}
+.clipboard-top{margin:14px 16px 8px;background:#111a2d;border:1px solid rgba(255,255,255,.12);border-radius:18px;padding:12px 14px;display:flex;align-items:center;justify-content:space-between;gap:10px;}
+.clipboard-heading{display:flex;align-items:center;gap:10px;min-width:0;}
+.clipboard-icon{width:30px;height:30px;border-radius:50%;background:var(--primary);color:#151923;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:900;flex-shrink:0;}
+.clipboard-heading strong{font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.clipboard-pill{background:var(--primary);color:#10131c;border-radius:18px;padding:7px 12px;font-size:11px;font-weight:800;white-space:nowrap;}
+.clipboard-tabs{display:flex;gap:7px;padding:8px 16px 10px;overflow-x:auto;}
+.clipboard-tabs::-webkit-scrollbar{display:none;}
+.clipboard-tab{border:1px solid var(--border-color);background:#111a2d;color:var(--text-sub);border-radius:16px;padding:7px 11px;font-size:11px;font-weight:700;white-space:nowrap;}
+.clipboard-tab.active{background:var(--primary);border-color:var(--primary);color:#11131a;}
+.tactic-card{margin:0 16px;background:#0b1224;border:1px solid rgba(255,255,255,.13);border-radius:18px;padding:12px;box-shadow:0 12px 24px rgba(0,0,0,.2);}
+.tactic-card-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px;}
+.tactic-kicker{font-size:10px;color:#8d96a8;text-transform:uppercase;font-weight:800;letter-spacing:.4px;}
+.tactic-name{font-size:13px;color:var(--primary);font-weight:800;margin-top:2px;}
+.tactic-step-badge{background:#293449;border:1px solid rgba(255,255,255,.15);border-radius:8px;padding:7px 9px;color:#dce3ef;font-size:11px;font-weight:800;white-space:nowrap;}
+.tactic-pause{width:30px;height:30px;border:0;border-radius:9px;background:var(--primary);color:#151923;font-weight:900;font-size:14px;}
+.tactical-court{height:230px;border:1px solid rgba(255,255,255,.12);border-radius:14px;background:#060b1b;position:relative;overflow:hidden;border-top:3px solid var(--primary);}
+.tactical-court:before,.tactical-court:after{content:'';position:absolute;left:0;right:0;height:1px;background:rgba(255,255,255,.12);}
+.tactical-court:before{top:33%;}.tactical-court:after{top:66%;}
+.court-net{position:absolute;top:50%;left:0;right:0;height:2px;background:rgba(255,255,255,.18);}
+.court-zone{position:absolute;left:8px;right:8px;top:10px;bottom:10px;border:1px dashed rgba(255,255,255,.08);border-radius:8px;}
+.tactical-player{position:absolute;transform:translate(-50%,-50%);width:33px;height:33px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:900;color:#111827;border:2px solid #f0f4ff;box-shadow:0 4px 10px rgba(0,0,0,.35);transition:left 650ms var(--ease-sport),top 650ms var(--ease-sport),transform 250ms var(--ease-elastic);z-index:2;}
+.tactical-player.setter{background:var(--primary);}.tactical-player.attacker{background:var(--primary-light);}.tactical-player.defender{background:var(--primary-dark);}.tactical-player.libero{background:var(--accent);}
+.tactical-player.active-move{transform:translate(-50%,-50%) scale(1.17);box-shadow:0 0 0 4px rgba(255,177,10,.18),0 5px 16px rgba(0,0,0,.45);}
+.tactical-label{position:absolute;transform:translateX(-50%);font-size:8px;font-weight:700;color:#e8edf7;white-space:nowrap;background:rgba(10,15,29,.8);padding:2px 4px;border-radius:4px;z-index:3;transition:left 650ms var(--ease-sport),top 650ms var(--ease-sport);}
+.tactic-caption{margin-top:10px;background:#141e31;border-radius:10px;padding:10px 12px;font-size:12px;font-weight:700;display:flex;align-items:center;gap:8px;min-height:38px;}
+.tactic-caption span:first-child{color:var(--primary);font-size:15px;}
+.tactic-controls{display:flex;gap:8px;margin-top:10px;}
+.tactic-control{flex:1;border:1px solid rgba(255,255,255,.12);background:#182338;color:#e5eaf3;border-radius:10px;padding:9px;font-weight:800;font-size:12px;}
+.tactic-control.primary{background:var(--primary);border-color:var(--primary);color:#11131a;}
+.tactic-help{margin:12px 16px 0;color:var(--text-sub);font-size:11px;text-align:center;}
+@media (max-width:360px){.tactical-court{height:205px}.tactical-player{width:29px;height:29px;font-size:10px}.tactical-label{font-size:7px}}
+
+.info-tile{background:var(--bg-card);padding:12px;border-radius:12px;}
+.info-tile span{font-size:11px;color:var(--text-sub);}
+.info-tile p{font-weight:bold;margin-top:2px;}
+.curiosity-box{margin:0 0 20px 0;padding:14px;background:var(--bg-card);border-radius:14px;border:1px solid var(--border-color);}
+.curiosity-box .cb-label{font-size:11px;color:var(--primary);font-weight:700;margin-bottom:4px;}
+.curiosity-box p{font-size:13px;line-height:1.5;color:var(--text-main);}
+
+.chat-messages{flex:1;padding:16px;padding-bottom:16px;display:flex;flex-direction:column;gap:12px;}
+.chat-bubble{max-width:80%;padding:12px 16px;border-radius:18px;font-size:14px;line-height:1.4;word-break:break-word;}
+.chat-bubble.ai{background:var(--bg-card);border:1px solid var(--border-color);align-self:flex-start;border-bottom-left-radius:4px;}
+.chat-bubble.user{background:var(--primary);color:#FFF;align-self:flex-end;border-bottom-right-radius:4px;}
+.typing-indicator{display:flex;gap:4px;padding:10px 14px;background:var(--bg-card);border-radius:14px;width:fit-content;align-self:flex-start;border:1px solid var(--border-color);}
+.dot{width:6px;height:6px;background:var(--text-sub);border-radius:50%;animation:pulse 1s infinite alternate;}
+.dot:nth-child(2){animation-delay:.2s;}
+.dot:nth-child(3){animation-delay:.4s;}
+@keyframes pulse{to{opacity:.3;transform:scale(.8);}}
+.chat-input-area{position:absolute;bottom:65px;left:0;right:0;padding:10px 16px;background:var(--bg-dark);border-top:1px solid var(--border-color);display:flex;gap:8px;}
+.chat-input{flex:1;background:var(--bg-card);border:1px solid var(--border-color);border-radius:20px;padding:10px 16px;color:#FFF;outline:none;font-size:14px;}
+.chat-send{background:var(--primary);border:none;color:#FFF;padding:0 18px;border-radius:18px;font-weight:700;}
+
+.modal-overlay{position:absolute;inset:0;background:rgba(0,0,0,.7);backdrop-filter:blur(4px);z-index:1500;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity var(--motion-standard);padding:24px;}
+.modal-overlay.active{opacity:1;pointer-events:auto;}
+.modal-box{width:100%;max-width:300px;background:var(--bg-card);border-radius:24px;padding:20px;border:1px solid var(--border-color);transform:scale(.8);transition:transform var(--motion-standard) var(--ease-elastic);text-align:center;}
+.modal-overlay.active .modal-box{transform:scale(1);}
+.bottom-sheet{position:absolute;bottom:0;left:0;right:0;background:var(--bg-card);border-top-left-radius:28px;border-top-right-radius:28px;padding:20px;padding-bottom:calc(20px + var(--sab));z-index:1600;border-top:1px solid var(--border-color);transform:translateY(100%);transition:transform var(--motion-standard) var(--ease-sport);max-height:82%;overflow-y:auto;}
+.bottom-sheet.active{transform:translateY(0);}
+.sheet-handle{width:40px;height:4px;background:var(--text-sub);border-radius:2px;margin:0 auto 16px auto;opacity:.5;}
+.play-stage{height:180px;background:#000;border-radius:16px;margin:12px 0;position:relative;overflow:hidden;display:flex;align-items:center;justify-content:center;border:1px solid var(--border-color);}
+.play-stage .net{position:absolute;left:0;right:0;top:20px;height:3px;background:repeating-linear-gradient(90deg,#fff,#fff 4px,transparent 4px,transparent 8px);opacity:.4;}
+.play-ball{width:18px;height:18px;background:radial-gradient(circle at 30% 30%,#FFF,#FF6B00 60%,#0055A5);border-radius:50%;position:absolute;transition:left 700ms var(--ease-sport),bottom 700ms var(--ease-sport),transform 700ms var(--ease-sport);box-shadow:0 0 10px rgba(255,107,0,.6);}
+.phase-list{display:flex;flex-direction:column;gap:6px;margin-bottom:14px;}
+.phase-row{display:flex;align-items:center;gap:10px;font-size:12px;color:var(--text-sub);padding:6px 8px;border-radius:10px;transition:background var(--motion-fast);}
+.phase-row.active{background:rgba(255,107,0,.12);color:var(--text-main);font-weight:600;}
+.phase-dot{width:8px;height:8px;border-radius:50%;background:var(--text-sub);flex-shrink:0;}
+.phase-row.active .phase-dot{background:var(--primary);}
+
+.skeleton{background:linear-gradient(90deg,var(--bg-card) 25%,#252830 50%,var(--bg-card) 75%);background-size:200% 100%;animation:shimmer 1.5s infinite;}
+@keyframes shimmer{0%{background-position:-200% 0;}100%{background-position:200% 0;}}
+.empty-state{text-align:center;padding:50px 24px;color:var(--text-sub);}
+.empty-state .emoji{font-size:40px;margin-bottom:10px;}
+
+@media (prefers-reduced-motion:reduce){*{animation-duration:.01ms!important;transition-duration:.01ms!important;}}
+</style>
+</head>
+<body>
+<div class="device-frame theme-karasuno" id="app-frame">
+  <div class="notification-container" id="toast-area"></div>
+
+  <div id="splash-screen">
+    <button class="skip-splash interactive" id="skip-splash-btn">Pular</button>
+    <div class="court-lines"></div>
+    <svg class="hinata-svg" id="hinata-svg" viewBox="0 0 100 120">
+      <g id="hinata-body">
+        <circle cx="50" cy="25" r="15" fill="#FF6B00"/>
+        <circle cx="50" cy="28" r="11" fill="#FFDBAC"/>
+        <rect x="42" y="40" width="16" height="35" rx="5" fill="#0F1015"/>
+        <path d="M 42 45 L 25 60" stroke="#FFDBAC" stroke-width="6" stroke-linecap="round"/>
+        <path d="M 58 45 L 75 30" stroke="#FFDBAC" stroke-width="6" stroke-linecap="round"/>
+      </g>
+    </svg>
+    <div class="volleyball" id="splash-ball"></div>
+    <div class="splash-title" id="splash-title">O SAQUE DO HINATA</div>
+    <div class="splash-sub" id="splash-sub">carregando a quadra do Karasuno...</div>
+  </div>
+
+  <div class="app-screen" id="app-screen">
+    <section class="view-section active" id="view-home">
+      <div class="hero-banner stagger-item">
+        <div class="hero-bg-ball"></div>
+        <span style="font-size:12px;color:var(--primary);font-weight:bold;">DESTAQUE DA SEMANA</span>
+        <h2 style="font-size:21px;margin:4px 0;">O Ataque Rápido Relâmpago</h2>
+        <p style="font-size:12px;color:var(--text-sub);">A combinação de Kageyama e Hinata que mudou o vôlei de Karasuno.</p>
+      </div>
+      <div class="section-title stagger-item">
+        <span>Jogadores em Destaque</span>
+        <span style="font-size:12px;color:var(--primary);" class="interactive" onclick="switchTab('teams')">Ver times</span>
+      </div>
+      <div class="cards-scroll-x stagger-item" id="home-highlights"></div>
+      <div class="section-title stagger-item" style="margin-top:14px;">
+        <span>Curiosidade do Dia</span>
+      </div>
+      <div style="margin:0 16px;padding:16px;background:var(--bg-card);border-radius:16px;border:1px solid var(--border-color);" class="stagger-item" id="home-fact">
+        <p style="font-size:13px;line-height:1.5;">O salto vertical de Hinata atinge cerca de 333 cm de alcance — um dos maiores da série, mesmo sendo o jogador mais baixo em quadra.</p>
+      </div>
+    </section>
+
+    <section class="view-section" id="view-teams">
+      <div class="tabs-bar">
+        <button class="tab-btn active interactive" data-team="karasuno" onclick="selectTeam('karasuno', this)">Karasuno</button>
+        <button class="tab-btn interactive" data-team="nekoma" onclick="selectTeam('nekoma', this)">Nekoma</button>
+        <button class="tab-btn interactive" data-team="aoba" onclick="selectTeam('aoba', this)">Aoba Johsai</button>
+        <button class="tab-btn interactive" data-team="shiratorizawa" onclick="selectTeam('shiratorizawa', this)">Shiratorizawa</button>
+      </div>
+      <div class="section-title" style="margin-bottom:0;"><span id="court-title">Escalação titular — Karasuno</span></div>
+      <div class="court-wrap">
+        <div class="mini-court" id="mini-court"></div>
+        <div class="libero-strip interactive" id="libero-strip"></div>
+      </div>
+      <div class="section-title"><span>Elenco completo</span></div>
+      <div id="players-list"></div>
+    </section>
+
+    <section class="view-section clipboard-view" id="view-clipboard">
+      <div class="clipboard-top">
+        <div class="clipboard-heading"><div class="clipboard-icon">🏐</div><strong id="clipboard-title">Táticas de Karasuno High</strong></div>
+        <div class="clipboard-pill" id="clipboard-tactic-pill">Ataque Rápido Freak Quick</div>
+      </div>
+      <div class="clipboard-tabs" id="clipboard-team-tabs">
+        <button class="clipboard-tab active interactive" data-clipboard-team="karasuno" onclick="selectClipboardTeam('karasuno', this)">Karasuno</button>
+        <button class="clipboard-tab interactive" data-clipboard-team="nekoma" onclick="selectClipboardTeam('nekoma', this)">Nekoma</button>
+        <button class="clipboard-tab interactive" data-clipboard-team="aoba" onclick="selectClipboardTeam('aoba', this)">Aoba Johsai</button>
+        <button class="clipboard-tab interactive" data-clipboard-team="shiratorizawa" onclick="selectClipboardTeam('shiratorizawa', this)">Shiratorizawa</button>
+      </div>
+      <div class="tactic-card">
+        <div class="tactic-card-head">
+          <div><div class="tactic-kicker">Jogada ativa</div><div class="tactic-name" id="clipboard-tactic-name">Ataque Rápido Freak Quick</div></div>
+          <div style="display:flex;align-items:center;gap:7px;"><div class="tactic-step-badge" id="clipboard-step-badge">Etapa 1 / 4</div><button class="tactic-pause interactive" id="clipboard-play-toggle" onclick="toggleClipboardPlayback()">Ⅱ</button></div>
+        </div>
+        <div class="tactical-court" id="tactical-court"><div class="court-zone"></div><div class="court-net"></div></div>
+        <div class="tactic-caption"><span>☷</span><span id="clipboard-step-caption">1. Kageyama recebe e prepara o levantamento.</span></div>
+        <div class="tactic-controls"><button class="tactic-control interactive" onclick="previousClipboardStep()">‹ Anterior</button><button class="tactic-control primary interactive" onclick="nextClipboardStep()">Próxima ›</button></div>
+      </div>
+      <div class="tactic-help">Cada etapa mostra o deslocamento dos jogadores até a conclusão da jogada.</div>
+    </section>
+
+    <section class="view-section" id="view-favorites">
+      <div class="section-title"><span>Meus Jogadores Favoritos</span></div>
+      <div id="favs-list"></div>
+    </section>
+
+    <section class="view-section" id="view-chat">
+      <div class="chat-messages" id="chat-box">
+        <div class="chat-bubble ai">Olá! Sou o <strong>Coach de Vôlei</strong>. Pergunte sobre táticas, regras do vôlei ou sobre qualquer jogador dos quatro times. 🏐</div>
+      </div>
+      <div class="chat-input-area">
+        <input type="text" class="chat-input" id="chat-input" placeholder="Pergunte sobre uma jogada..." onkeydown="if(event.key==='Enter') sendChatMessage()">
+        <button class="chat-send interactive" onclick="sendChatMessage()">Enviar</button>
+      </div>
+    </section>
+
+    <section class="view-section" id="view-profile">
+      <div class="profile-header">
+        <button class="interactive" onclick="switchTab('teams')" style="position:absolute;top:calc(16px + var(--sat));left:16px;background:rgba(0,0,0,.3);border:none;color:#FFF;width:34px;height:34px;border-radius:10px;font-size:16px;">←</button>
+        <div class="profile-photo" id="prof-photo"></div>
+        <div class="profile-num" id="prof-num">10</div>
+        <button class="profile-fav-btn interactive" id="prof-fav-btn" onclick="toggleProfileFavorite()" aria-label="Adicionar aos favoritos">☆</button>
+        <div>
+          <h1 id="prof-name" style="font-size:24px;">Hinata Shoyo</h1>
+          <p id="prof-team" style="color:var(--text-sub);font-size:13px;">Karasuno High • #10</p>
+        </div>
+      </div>
+      <div style="padding:16px;">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;">
+          <div class="info-tile"><span>Posição</span><p id="prof-pos">Central (MB)</p></div>
+          <div class="info-tile"><span>Altura</span><p id="prof-height">164.2 cm</p></div>
+        </div>
+        <div class="curiosity-box">
+          <div class="cb-label">Curiosidade</div>
+          <p id="prof-curiosity">—</p>
+        </div>
+        <div class="player-stats">
+          <div class="player-stats-title">Atributos principais</div>
+          <div id="player-stats-list"></div>
+        </div>
+        <button class="interactive" id="prof-play-btn" style="width:100%;padding:14px;background:var(--primary);border:none;border-radius:14px;color:#FFF;font-weight:700;font-size:14px;" onclick="openPlaybookSheet()">⚡ Ver Jogada Principal</button>
+      </div>
+    </section>
+  </div>
+
+  <nav class="bottom-nav">
+    <div class="nav-indicator" id="nav-indicator"></div>
+    <div class="nav-item active interactive" onclick="switchTab('home')">
+      <svg viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg><span>Início</span>
+    </div>
+    <div class="nav-item interactive" onclick="switchTab('teams')">
+      <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67z"/></svg><span>Times</span>
+    </div>
+    <div class="nav-item interactive" onclick="switchTab('clipboard')">
+      <svg viewBox="0 0 24 24"><path d="M19 3h-4.18C14.4 1.84 13.3 1 12 1s-2.4.84-2.82 2H5c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7-0.5c.28 0 .5.22.5.5s-.22.5-.5.5-.5-.22-.5-.5.22-.5.5-.5zM7 8h10v2H7V8zm0 4h10v2H7v-2zm0 4h7v2H7v-2z"/></svg><span>Prancheta</span>
+    </div>
+    <div class="nav-item interactive" onclick="switchTab('chat')">
+      <svg viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-1.99.9-1.99 2L2 22l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-2 12H6v-2h12v2zm0-3H6V9H6v2zm0-3H6V6h12v2z"/></svg><span>Coach</span>
+    </div>
+    <div class="nav-item interactive" onclick="switchTab('favorites')">
+      <svg viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg><span>Favoritos</span>
+    </div>
+  </nav>
+
+  <div class="modal-overlay" id="confirm-modal">
+    <div class="modal-box">
+      <h3 id="confirm-title" style="margin-bottom:8px;">Adicionar aos Favoritos?</h3>
+      <p id="confirm-desc" style="font-size:13px;color:var(--text-sub);margin-bottom:20px;">Deseja salvar este jogador na sua lista de favoritos?</p>
+      <div style="display:flex;gap:10px;">
+        <button class="interactive" style="flex:1;padding:10px;background:transparent;border:1px solid var(--border-color);border-radius:12px;color:#FFF;" onclick="closeModal('confirm-modal')">Cancelar</button>
+        <button class="interactive" id="confirm-btn-action" style="flex:1;padding:10px;background:var(--primary);border:none;border-radius:12px;color:#FFF;font-weight:700;">Confirmar</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="alert-modal">
+    <div class="modal-box">
+      <div style="font-size:36px;margin-bottom:8px;" id="alert-icon">⚡</div>
+      <h3 id="alert-title">Sem conexão com a quadra</h3>
+      <p style="font-size:13px;color:var(--text-sub);margin:8px 0 20px 0;">Não foi possível sincronizar os dados. Verifique sua conexão.</p>
+      <button class="interactive" style="width:100%;padding:10px;background:var(--primary);border:none;border-radius:12px;color:#FFF;font-weight:700;" onclick="retryConnection()">Tentar novamente</button>
+    </div>
+  </div>
+
+  <div class="bottom-sheet" id="playbook-sheet">
+    <div class="sheet-handle interactive" onclick="closeBottomSheet()"></div>
+    <h3 style="font-size:18px;" id="play-title">Ataque Rápido Relâmpago</h3>
+    <p style="font-size:12px;color:var(--text-sub);margin-bottom:8px;" id="play-sub">Jogada marcante em 4 fases</p>
+    <div class="play-stage" id="play-stage">
+      <div class="net"></div>
+      <div id="play-ball" class="play-ball" style="left:20px;bottom:20px;"></div>
+      <div id="play-text" style="position:absolute;bottom:8px;left:0;right:0;text-align:center;color:#FFF;font-weight:bold;font-size:12px;text-shadow:0 0 10px #000;">Fase 1</div>
+    </div>
+    <div class="phase-list" id="phase-list"></div>
+    <div style="display:flex;gap:10px;">
+      <button class="interactive" style="flex:1;padding:10px;background:var(--bg-dark);border:1px solid var(--border-color);border-radius:12px;color:#FFF;" onclick="closeBottomSheet()">Fechar</button>
+      <button class="interactive" style="flex:1;padding:10px;background:var(--primary);border:none;border-radius:12px;color:#FFF;font-weight:700;" onclick="runPlaybookAnimation()">🔁 Repetir</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ============================================================
+   DADOS: TIMES, JOGADORES E JOGADAS
+============================================================ */
+const ROLE_LABEL = { S:'Levantador', OP:'Oposto', MB:'Central', WS:'Ponteiro', L:'Líbero' };
+
+function P(id,name,number,role,height,curiosity,move,phases){
+  return {id,name,number,role,posLabel:ROLE_LABEL[role],height,curiosity,move,phases,fav:false};
+}
+
+const PLAYERS_DATA = {
+  karasuno: [
+    P('daichi','Daichi Sawamura',1,'WS','178.8 cm','Capitão de Karasuno: impõe respeito só com o olhar, mas adora bolo castella.','Recepção de Capitão',
+      [['Postura de recepção',30,20,1],['Leitura do saque adversário',110,60,1],['Passe perfeito para o levantador',200,110,1.1],['Bola entregue com precisão',300,40,1]]),
+    P('sugawara','Koushi Sugawara',2,'S','172.6 cm','Vice-capitão, conhecido como o "setter mãe" por cuidar de todo o time.','Levantamento Surpresa',
+      [['Entra como levantador reserva',30,25,1],['Observa o bloqueio adversário',110,70,1],['Levantamento disfarçado',190,120,1.15],['Ataque surpresa aberto',300,50,1]]),
+    P('asahi','Asahi Azumane',3,'WS','184.7 cm','O Ás de Karasuno: parece assustador, mas é gentil e sensível.','Ataque do Ás',
+      [['Corrida de aproximação',20,20,1],['Salto de ataque',120,80,1.05],['Impacto de potência máxima',210,150,1.3],['Ponto do Ás confirmado',310,30,1]]),
+    P('nishinoya','Yu Nishinoya',4,'L','159.3 cm','O "Guardião": o menor do time, mas um dos melhores líberos já vistos.','Rolling Receive',
+      [['Bola vindo em alta velocidade',280,140,1],['Mergulho lateral',180,60,1.1],['Rolamento no chão (Rolling Receive)',90,20,1.2],['Bola recuperada perfeitamente',30,90,1]]),
+    P('tanaka','Ryunosuke Tanaka',5,'WS','184.3 cm','Cabeça raspada e grito de guerra: joga com paixão inabalável.','Ataque Explosivo',
+      [['Grito de motivação',20,20,1],['Corrida acelerada',110,60,1],['Salto explosivo',210,140,1.25],['Cravada na quadra adversária',310,40,1]]),
+    P('ennoshita','Chikara Ennoshita',6,'WS','173.5 cm','Ex-atuante de teatro; futuro capitão, joga com a cabeça fria.','Jogada Calculada',
+      [['Analisa o bloqueio',30,20,1],['Reposiciona o ataque',120,70,1],['Finta controlada',210,100,1.05],['Ponto estratégico',300,40,1]]),
+    P('kinoshita','Hisashi Kinoshita',7,'WS','172 cm','Sempre ao lado de Narita, discreto mas confiável em quadra.','Cobertura Silenciosa',
+      [['Posição de cobertura',30,20,1],['Acompanha a jogada',120,50,1],['Recupera bola difícil',210,90,1.1],['Repasse seguro',300,30,1]]),
+    P('narita','Kazuhito Narita',8,'MB','179 cm','Parceiro de Kinoshita; ótimo em leitura de jogo e bloqueio.','Bloqueio Duplo',
+      [['Observa o levantador rival',150,20,1],['Salta em sincronia',150,90,1],['Bloqueio duplo na rede',150,150,1.3],['Bola bloqueada dentro',80,60,1]]),
+    P('kageyama','Tobio Kageyama',9,'S','180.6 cm','Apelidado "Rei da Quadra"; extremamente exigente consigo mesmo, adora leite.','Levantamento Perfeito',
+      [['Recebe o passe',30,20,1],['Ajusta os pés rapidamente',110,50,1],['Levantamento milimétrico',190,110,1.1],['Bola entregue no ponto exato para o ataque',300,140,1]]),
+    P('hinata','Shoyo Hinata',10,'MB','164.2 cm','O menor em quadra que voa mais alto; adora pão doce de feijão (anpan).','Ataque Rápido Relâmpago',
+      [['Corrida veloz até a rede',20,20,1],['Salto no escuro, sem ver o levantador',130,90,1.1],['Impacto instantâneo — Ataque Relâmpago!',220,160,1.35],['Ponto cravado antes do bloqueio formar',320,50,1]]),
+    P('tsukishima','Kei Tsukishima',11,'MB','190.1 cm','Irônico e frio, mas secretamente apaixonado por dinossauros.','Bloqueio de Leitura',
+      [['Observa o padrão do ataque rival',150,20,1],['Lê a trajetória da bola',150,80,1],['Bloqueio calculado na rede',150,150,1.25],['Ponto por leitura perfeita',80,60,1]]),
+    P('yamaguchi','Tadashi Yamaguchi',12,'WS','172.2 cm','Melhor amigo de Tsukishima; treina o saque flutuante todos os dias.','Saque Flutuante Jump',
+      [['Posição de saque',30,20,1],['Impulso e salto',110,90,1],['Contato flutuante sem rotação',210,150,1.2],['Bola cai imprevisível no fundo da quadra',310,30,1]]),
+  ],
+  nekoma: [
+    P('kuroo','Tetsuro Kuroo',1,'MB','187.7 cm','Capitão "galo" provocador; mestre em leitura de bloqueio.','Leitura de Bloqueio',
+      [['Observa o levantador adversário',150,20,1],['Antecipa o ataque',150,80,1],['Bloqueio de leitura perfeito',150,150,1.3],['Ponto por antecipação',80,60,1]]),
+    P('yaku','Morisuke Yaku',2,'L','165.1 cm','Recepção quase perfeita; não gosta de ser chamado de baixinho.','Recepção Perfeita',
+      [['Bola vinda com potência',280,140,1],['Ajuste rápido de braços',180,60,1],['Recepção precisa e estável',90,20,1.1],['Bola perfeita para o Kenma',30,90,1]]),
+    P('yamamoto','Taketora Yamamoto',3,'WS','178.4 cm','Energia explosiva; sonha em ser reconhecido como Ás do time.','Ataque de Poder',
+      [['Corrida intensa',20,20,1],['Salto de força máxima',120,90,1.05],['Cravada violenta',210,150,1.3],['Ponto e grito de vitória',310,30,1]]),
+    P('lev','Lev Haiba',4,'MB','190.1 cm','O gigante desajeitado que aprende rápido com os veteranos.','Ataque do Gigante',
+      [['Alcance gigante na rede',150,20,1],['Salto desengonçado',150,90,1],['Impacto surpreendentemente forte',150,150,1.2],['Ponto inesperado',80,60,1]]),
+    P('kenma','Kenma Kozume',5,'S','169.2 cm','Prefere videogames a socializar, mas é o cérebro tático do time.','Levantamento Estratégico',
+      [['Analisa toda a quadra',30,20,1],['Escolhe o melhor atacante',110,50,1],['Levantamento calculado',190,110,1.1],['Jogada executada com perfeição',300,140,1]]),
+    P('fukunaga','Shohei Fukunaga',7,'WS','176.3 cm','Quieto e observador; muito confiável quando é acionado.','Ataque Silencioso',
+      [['Posição discreta',20,20,1],['Aproximação silenciosa',110,70,1],['Ataque sem aviso',210,140,1.15],['Ponto surpresa',310,40,1]]),
+    P('inuoka','Sou Inuoka',10,'MB','179.5 cm','Sempre animado; adora aprender técnicas novas com os veteranos.','Bloqueio Animado',
+      [['Sorri antes da jogada',150,20,1],['Salta com entusiasmo',150,90,1],['Bloqueio enérgico',150,150,1.2],['Comemoração animada',80,60,1]]),
+    P('shibayama','Yuki Shibayama',12,'L','165.3 cm','Líbero reserva, nervoso mas muito dedicado aos treinos.','Recepção de Aprendiz',
+      [['Postura tensa de recepção',280,140,1],['Foco total na bola',180,60,1],['Recepção cuidadosa',90,20,1],['Bola controlada com sucesso',30,90,1]]),
+  ],
+  aoba: [
+    P('oikawa','Tooru Oikawa',1,'S','184.7 cm','Setter genial e carismático; apaixonado por alienígenas e astronomia.','Saque Viagem (Jump Serve)',
+      [['Respiração antes do saque',30,20,1],['Impulso e salto alto',120,100,1.05],['Contato preciso em pleno ar',220,160,1.2],['Saque viagem cai na linha',320,30,1]]),
+    P('iwaizumi','Hajime Iwaizumi',4,'WS','184.4 cm','Melhor amigo de infância de Oikawa e o "freio de mão" do time.','Ataque de Ferro',
+      [['Corrida direta e firme',20,20,1],['Salto sem hesitação',120,90,1.05],['Cravada de ferro',210,150,1.25],['Ponto decisivo',310,30,1]]),
+    P('matsukawa','Issei Matsukawa',16,'MB','185.5 cm','Descontraído e sarcástico, mas um bloqueador muito perceptivo.','Bloqueio Surpresa',
+      [['Postura relaxada',150,20,1],['Observa com calma',150,80,1],['Bloqueio rápido e inesperado',150,150,1.25],['Ponto de bloqueio',80,60,1]]),
+    P('hanamaki','Takahiro Hanamaki',15,'WS','180.6 cm','Parceiro de piadas de Matsukawa; especialista em ataques cruzados.','Ataque Cruzado',
+      [['Corrida em diagonal',20,20,1],['Salto angulado',120,90,1],['Ataque cruzado na diagonal',220,150,1.2],['Bola cai na linha lateral',310,40,1]]),
+    P('watari','Shinji Watari',10,'L','169.1 cm','Reserva versátil e confiável, sempre pronto para entrar em quadra.','Recepção de Reserva',
+      [['Entra atento em quadra',280,140,1],['Foco total na trajetória',180,60,1],['Recepção segura',90,20,1],['Bola entregue ao levantador',30,90,1]]),
+    P('kindaichi','Yutaro Kindaichi',12,'MB','186.8 cm','Ex-companheiro de Kageyama no ensino fundamental; grande potência.','Bloqueio de Potência',
+      [['Postura firme na rede',150,20,1],['Salto de força',150,90,1],['Bloqueio de impacto',150,150,1.3],['Bola travada',80,60,1]]),
+    P('kunimi','Akira Kunimi',7,'MB','172.6 cm','Parece desmotivado, mas é extremamente talentoso em quadra.','Bloqueio Preguiçoso',
+      [['Postura desanimada',150,20,1],['Movimento mínimo e eficiente',150,80,1],['Bloqueio certeiro sem esforço aparente',150,150,1.15],['Ponto tranquilo',80,60,1]]),
+    P('kyotani','Kentaro Kyotani',5,'WS','176.5 cm','Apelidado "Mad Dog"; temperamento explosivo e ataques selvagens.','Ataque Selvagem',
+      [['Encara o adversário',20,20,1],['Salto agressivo',120,100,1.1],['Cravada selvagem',210,160,1.3],['Ponto com intensidade total',310,30,1]]),
+  ],
+  shiratorizawa: [
+    P('ushijima','Wakatoshi Ushijima',1,'WS','192.7 cm','Considerado o melhor atacante do país; extremamente disciplinado.','Corte Poderoso (Straight Cut)',
+      [['Corrida controlada e firme',20,20,1],['Salto de altura máxima',130,110,1.1],['Impacto de potência bruta',220,170,1.35],['Bola atravessa o bloqueio',320,40,1]]),
+    P('semi','Eita Semi',2,'S','180.6 cm','Levantador talentoso que sonha em ser titular fixo do time.','Levantamento Ambicioso',
+      [['Recebe o passe com calma',30,20,1],['Avalia as opções de ataque',110,50,1],['Levantamento ambicioso e preciso',190,110,1.1],['Ataque bem servido',300,140,1]]),
+    P('tendo','Satori Tendo',5,'MB','188.9 cm','Excêntrico e imprevisível; sua leitura de bloqueio parece sobrenatural.','Bloqueio Adivinho (Guess Block)',
+      [['Sorriso confiante antes da jogada',150,20,1],['"Adivinha" a direção do ataque',150,80,1],['Bloqueio no ponto exato',150,150,1.3],['Ponto surpreendente',80,60,1]]),
+    P('goshiki','Tsutomu Goshiki',12,'WS','178.1 cm','Cheio de autoconfiança, sempre buscando superar Ushijima.','Ataque Determinado',
+      [['Postura confiante',20,20,1],['Salto decidido',120,90,1.05],['Cravada com determinação total',210,150,1.2],['Ponto conquistado',310,30,1]]),
+    P('shirabu','Kenjiro Shirabu',6,'S','172.7 cm','Levantador titular do 2º ano; extremamente confiante em suas escolhas.','Levantamento Preciso',
+      [['Controle total da jogada',30,20,1],['Escolhe o atacante ideal',110,50,1],['Levantamento cirúrgico',190,110,1.1],['Ataque certeiro',300,140,1]]),
+    P('reon','Reon Ohira',4,'WS','187.2 cm','Confiável e constante — o pilar silencioso do time titular.','Ataque Consistente',
+      [['Postura estável',20,20,1],['Salto controlado',120,90,1],['Ataque sólido e constante',210,150,1.15],['Ponto garantido',310,30,1]]),
+    P('kawanishi','Taichi Kawanishi',3,'MB','183.3 cm','Bloqueador técnico, sempre calculando ângulos de bloqueio.','Bloqueio Técnico',
+      [['Calcula o ângulo de bloqueio',150,20,1],['Posiciona as mãos com precisão',150,80,1],['Bloqueio técnico perfeito',150,150,1.25],['Ponto por técnica',80,60,1]]),
+    P('yamagata','Hayato Yamagata',7,'WS','172.7 cm','Veterano confiável, peça-chave do time titular de Shiratorizawa.','Ataque de Veterano',
+      [['Experiência em cada movimento',20,20,1],['Salto seguro',120,90,1],['Ataque de veterano',210,150,1.2],['Ponto com maestria',310,30,1]]),
+  ],
+};
+
+const TEAM_NAMES = { karasuno:'Karasuno', nekoma:'Nekoma', aoba:'Aoba Johsai', shiratorizawa:'Shiratorizawa' };
+const PLAYER_PHOTOS = {
+  daichi:'assets/players/daichi-small.jpg', sugawara:'assets/players/sugawara-small.jpg',
+  asahi:'assets/players/asahi-small.jpg', nishinoya:'assets/players/nishinoya-small.jpg',
+  tanaka:'assets/players/tanaka-small.jpg', ennoshita:'assets/players/ennoshita-small.jpg',
+  kinoshita:'assets/players/kinoshita-small.jpg', narita:'assets/players/narita-small.jpg',
+  kageyama:'assets/players/kageyama.jpg', hinata:'assets/players/hinata.jpg',
+  tsukishima:'assets/players/tsukishima-small.jpg', yamaguchi:'assets/players/yamaguchi-small.jpg',
+  kuroo:'assets/players/kuroo.jpg', yaku:'assets/players/yaku-small.jpg',
+  yamamoto:'assets/players/yamamoto-small.jpg', lev:'assets/players/lev-small.jpg',
+  kenma:'assets/players/kenma.jpg', fukunaga:'assets/players/fukunaga-small.jpg',
+  inuoka:'assets/players/inuoka-small.jpg', shibayama:'assets/players/shibayama-small.jpg',
+  oikawa:'assets/players/oikawa.jpg', iwaizumi:'assets/players/iwachan-small.jpg',
+  matsukawa:'assets/players/matsukawa-small.jpg', hanamaki:'assets/players/hanamaki-small.jpg',
+  watari:'assets/players/watari-small.jpg', kindaichi:'assets/players/kindaichi-small.jpg',
+  kunimi:'assets/players/kunimi-small.jpg', kyotani:'assets/players/kyotani-small.jpg',
+  ushijima:'assets/players/ushijima.jpg', semi:'assets/players/semi.jpg',
+  tendo:'assets/players/tendo-small.jpg', goshiki:'assets/players/goshiki-small.jpg',
+  shirabu:'assets/players/shirabu-small.jpg', reon:'assets/players/reon-small.jpg',
+  kawanishi:'assets/players/kawanishi-small.jpg', yamagata:'assets/players/yamagata-small.jpg'
+};
+function playerPhotoMarkup(player, className='player-photo'){
+  const photo = PLAYER_PHOTOS[player.id];
+  return photo
+    ? `<img class="${className}" src="${photo}" alt="Foto de ${player.name}" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">`
+    : '';
+}
+function playerAvatarMarkup(player){
+  return `<div class="player-avatar photo-wrap">${playerPhotoMarkup(player)}<span class="photo-fallback">#${player.number}</span></div>`;
+}
+
+
+// Escalação titular oficial (6 posições de quadra) por time — corrige o bug de posições incorretas
+const STARTING_LINEUP = {
+  karasuno: { S:'kageyama', MB1:'hinata', MB2:'tsukishima', WS1:'asahi', WS2:'daichi', L:'nishinoya' },
+  nekoma: { S:'kenma', MB1:'kuroo', MB2:'inuoka', WS1:'yamamoto', WS2:'fukunaga', L:'yaku' },
+  aoba: { S:'oikawa', MB1:'matsukawa', MB2:'kindaichi', WS1:'iwaizumi', WS2:'hanamaki', L:'watari' },
+  shiratorizawa: { S:'shirabu', MB1:'tendo', MB2:'kawanishi', WS1:'ushijima', WS2:'goshiki', L:'yamagata' },
+};
+
+let currentTeam = 'karasuno';
+let activePlayer = PLAYERS_DATA.karasuno[9]; // hinata
+const CLIPBOARD_TACTICS = {
+  karasuno: {name:'Ataque Rápido Freak Quick', steps:[
+    {caption:'Kageyama recebe e prepara o levantamento.', active:'kageyama', positions:{kageyama:[50,78],hinata:[50,22],tsukishima:[22,60],asahi:[78,60],daichi:[25,86],nishinoya:[75,86]}},
+    {caption:'Hinata acelera pela zona central; os bloqueadores são atraídos.', active:'hinata', positions:{kageyama:[50,70],hinata:[50,38],tsukishima:[30,48],asahi:[74,48],daichi:[20,80],nishinoya:[80,84]}},
+    {caption:'Kageyama solta o levantamento rápido no ponto de ataque.', active:'kageyama', positions:{kageyama:[48,64],hinata:[51,25],tsukishima:[23,42],asahi:[78,54],daichi:[20,82],nishinoya:[80,87]}},
+    {caption:'Hinata acerta a bola no ponto mais alto acima do bloqueio.', active:'hinata', positions:{kageyama:[45,68],hinata:[51,13],tsukishima:[25,46],asahi:[80,57],daichi:[20,84],nishinoya:[80,88]}}
+  ]},
+  nekoma: {name:'Bloqueio de Leitura', steps:[
+    {caption:'Kenma observa o ataque e organiza a defesa.', active:'kenma', positions:{kenma:[50,72],kuroo:[28,42],inuoka:[72,42],yamamoto:[20,82],fukunaga:[80,80],yaku:[50,90]}},
+    {caption:'Kuroo e Inuoka fecham o espaço central da rede.', active:'kuroo', positions:{kenma:[50,76],kuroo:[43,34],inuoka:[57,34],yamamoto:[18,80],fukunaga:[82,80],yaku:[50,92]}},
+    {caption:'O bloqueio acompanha o ombro do atacante adversário.', active:'inuoka', positions:{kenma:[50,78],kuroo:[47,25],inuoka:[53,25],yamamoto:[18,84],fukunaga:[82,82],yaku:[50,93]}},
+    {caption:'Kuroo fecha a linha e a bola volta para a quadra rival.', active:'kuroo', positions:{kenma:[50,78],kuroo:[50,17],inuoka:[59,25],yamamoto:[18,84],fukunaga:[82,82],yaku:[50,93]}}
+  ]},
+  aoba: {name:'Saque Viagem do Oikawa', steps:[
+    {caption:'Oikawa respira e escolhe o alvo no fundo da quadra.', active:'oikawa', positions:{oikawa:[50,15],iwaizumi:[25,58],matsukawa:[75,58],hanamaki:[25,84],kindaichi:[75,82],watari:[50,94]}},
+    {caption:'Oikawa lança a bola e inicia a aproximação.', active:'oikawa', positions:{oikawa:[53,26],iwaizumi:[28,56],matsukawa:[72,55],hanamaki:[25,84],kindaichi:[75,82],watari:[50,94]}},
+    {caption:'O salto cria o ângulo para o saque com efeito.', active:'oikawa', positions:{oikawa:[56,12],iwaizumi:[30,60],matsukawa:[70,58],hanamaki:[23,84],kindaichi:[77,82],watari:[50,94]}},
+    {caption:'A bola viaja para a linha de fundo e quebra a recepção.', active:'oikawa', positions:{oikawa:[58,16],iwaizumi:[30,60],matsukawa:[70,58],hanamaki:[23,84],kindaichi:[77,82],watari:[50,94]}}
+  ]},
+  shiratorizawa: {name:'Corte Poderoso do Ushijima', steps:[
+    {caption:'Ushijima inicia a corrida enquanto Shirabu lê o bloqueio.', active:'ushijima', positions:{shirabu:[50,76],ushijima:[28,44],goshiki:[72,52],tendo:[22,62],kawanishi:[78,62],yamagata:[50,92]}},
+    {caption:'O levantador acelera a bola para a ponta esquerda.', active:'shirabu', positions:{shirabu:[48,65],ushijima:[35,31],goshiki:[70,48],tendo:[24,58],kawanishi:[76,58],yamagata:[50,92]}},
+    {caption:'Ushijima sobe com o braço esquerdo pronto para o corte.', active:'ushijima', positions:{shirabu:[46,70],ushijima:[38,16],goshiki:[72,50],tendo:[26,46],kawanishi:[74,46],yamagata:[50,92]}},
+    {caption:'O corte atravessa o bloqueio com potência máxima.', active:'ushijima', positions:{shirabu:[46,72],ushijima:[43,10],goshiki:[72,53],tendo:[30,42],kawanishi:[70,42],yamagata:[50,92]}}
+  ]}
+};
+let clipboardTeam = 'karasuno';
+let clipboardStep = 0;
+let clipboardTimer = null;
+let clipboardPlaying = false;
+
+
+function findPlayer(id){
+  for (const team in PLAYERS_DATA){
+    const m = PLAYERS_DATA[team].find(p=>p.id===id);
+    if (m) return m;
+  }
+  return null;
+}
+
+/* ============================================================
+   TOQUE / RIPPLE / PARTÍCULAS
+============================================================ */
+document.addEventListener('click',(e)=>{
+  const target = e.target.closest('.interactive');
+  if (!target) return;
+  const rect = target.getBoundingClientRect();
+  const circle = document.createElement('span');
+  const diameter = Math.max(rect.width, rect.height);
+  circle.style.width = circle.style.height = `${diameter}px`;
+  circle.style.left = `${e.clientX - rect.left - diameter/2}px`;
+  circle.style.top = `${e.clientY - rect.top - diameter/2}px`;
+  circle.classList.add('ripple');
+  const oldRipple = target.getElementsByClassName('ripple')[0];
+  if (oldRipple) oldRipple.remove();
+  target.appendChild(circle);
+  if (target.classList.contains('active') || target.id==='confirm-btn-action' || target.classList.contains('chat-send')){
+    createParticles(e.clientX, e.clientY);
+  }
+});
+function createParticles(x,y){
+  for (let i=0;i<8;i++){
+    const p = document.createElement('div');
+    p.className = 'particle';
+    p.style.background = 'var(--primary)';
+    p.style.width = p.style.height = `${Math.random()*6+4}px`;
+    p.style.left = `${x}px`; p.style.top = `${y}px`;
+    const dx = (Math.random()-0.5)*80, dy = (Math.random()-0.5)*80;
+    p.style.setProperty('--dx', `${dx}px`);
+    p.style.setProperty('--dy', `${dy}px`);
+    document.body.appendChild(p);
+    setTimeout(()=>p.remove(),600);
+  }
+}
+
+/* ============================================================
+   SPLASH SCREEN — "O SAQUE DO HINATA"
+============================================================ */
+function runSplashScreen(){
+  const ball = document.getElementById('splash-ball');
+  const hinata = document.getElementById('hinata-svg');
+  const title = document.getElementById('splash-title');
+  const sub = document.getElementById('splash-sub');
+  const frame = document.getElementById('app-frame');
+  const splash = document.getElementById('splash-screen');
+
+  setTimeout(()=>{ hinata.style.transition='all 800ms var(--ease-sport)'; hinata.style.left='60px'; },300);
+  setTimeout(()=>{
+    ball.style.transition='all 600ms var(--ease-elastic)';
+    ball.style.transform='translate(-50%,-180%) scale(1.2)';
+    hinata.style.transition='all 600ms var(--ease-elastic)';
+    hinata.style.transform='translateY(-60px) rotate(-10deg)';
+  },1000);
+  setTimeout(()=>{
+    ball.style.transition='all 150ms ease-in';
+    ball.style.transform='translate(100px,220px) scale(0.6)';
+    frame.classList.add('shake');
+    createParticles(window.innerWidth/2+40, window.innerHeight/2+40);
+    setTimeout(()=>frame.classList.remove('shake'),300);
+  },1650);
+  setTimeout(()=>{
+    title.style.transition='all 400ms ease';
+    title.style.opacity='1';
+    title.style.transform='scale(1.05)';
+    sub.style.transition='all 400ms ease';
+    sub.style.opacity='1';
+  },2150);
+  setTimeout(()=>{
+    // a bola "cai" -> o site inicia
+    splash.style.transition='all 600ms var(--ease-sport)';
+    splash.style.opacity='0';
+    splash.style.pointerEvents='none';
+    showToast('🍊 Bem-vindo à quadra do Karasuno!');
+  },3100);
+}
+document.getElementById('skip-splash-btn').addEventListener('click',()=>{
+  document.getElementById('splash-screen').style.display='none';
+  showToast('⚡ Splash pulada');
+});
+
+/* ============================================================
+   NAVEGAÇÃO
+============================================================ */
+function switchTab(tabId){
+  document.querySelectorAll('.view-section').forEach(v=>v.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(i=>i.classList.remove('active'));
+  const target = document.getElementById(`view-${tabId}`);
+  if (target) target.classList.add('active');
+  const indexMap = { home:0, teams:1, clipboard:2, chat:3, favorites:4 };
+  const idx = indexMap[tabId] !== undefined ? indexMap[tabId] : 1;
+  const items = document.querySelectorAll('.nav-item');
+  if (items[idx]) items[idx].classList.add('active');
+  document.getElementById('nav-indicator').style.transform = `translateX(${idx*100}%)`;
+  if (tabId==='teams'){ renderCourt(); renderPlayersList(); }
+  if (tabId==='clipboard'){ renderClipboard(); }
+  if (tabId==='favorites') renderFavoritesList();
+}
+
+/* ============================================================
+   TIMES / QUADRA / ELENCO
+============================================================ */
+function selectTeam(teamKey, btnEl){
+  currentTeam = teamKey;
+  document.getElementById('app-frame').className = `device-frame theme-${teamKey}`;
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  if (btnEl) btnEl.classList.add('active');
+  document.getElementById('court-title').innerText = `Escalação titular — ${TEAM_NAMES[teamKey]}`;
+  renderCourt();
+  renderPlayersList();
+  renderClipboard();
+}
+
+function renderCourt(){
+  const lineup = STARTING_LINEUP[currentTeam];
+  const court = document.getElementById('mini-court');
+  const order = ['WS1','MB1','S','MB2','WS2'];
+  const cellsHTML = order.map(slotKey=>{
+    const p = findPlayer(lineup[slotKey]);
+    if (!p) return `<div class="court-pos"></div>`;
+    return `<div class="court-pos interactive" onclick="openProfile('${p.id}')">
+      <div class="cp-badge">${p.number}</div>
+      <div class="cp-name">${p.name.split(' ')[0]}</div>
+      <div class="cp-role">${p.posLabel}</div>
+    </div>`;
+  }).join('');
+  court.innerHTML = cellsHTML + `<div class="court-pos" style="opacity:.35;"><div class="cp-role">Rotação</div></div>`;
+
+  const liberoP = findPlayer(lineup.L);
+  const strip = document.getElementById('libero-strip');
+  if (liberoP){
+    strip.onclick = ()=>openProfile(liberoP.id);
+    strip.innerHTML = `<div class="cp-badge">${liberoP.number}</div>
+      <div style="flex:1;"><strong style="font-size:13px;">${liberoP.name}</strong>
+      <p style="font-size:11px;color:var(--text-sub);">Líbero titular — entra na recepção e defesa</p></div>
+      <span style="font-size:11px;color:var(--accent);">Ver perfil →</span>`;
+  }
+}
+
+function renderPlayersList(){
+  const container = document.getElementById('players-list');
+  container.innerHTML = '';
+  const list = PLAYERS_DATA[currentTeam] || [];
+  list.forEach((p, idx)=>{
+    const card = document.createElement('div');
+    card.className = 'player-card interactive stagger-item';
+    card.style.animationDelay = `${idx*60}ms`;
+    card.onclick = ()=>openProfile(p.id);
+    card.innerHTML = `
+      ${playerAvatarMarkup(p)}
+      <div style="flex:1;">
+        <strong>${p.name}</strong>
+        <p style="font-size:12px;color:var(--text-sub);">${p.posLabel} • ${p.height}</p>
+      </div>
+      <button class="fav-btn interactive ${p.fav ? 'active':''}" onclick="event.stopPropagation(); promptFavorite('${p.id}')">★</button>
+    `;
+    container.appendChild(card);
+  });
+}
+
+/* ============================================================
+   PERFIL DO JOGADOR
+============================================================ */
+function openProfile(playerId){
+  const found = findPlayer(playerId);
+  if (!found) return;
+  activePlayer = found;
+  updateProfileFavoriteButton();
+  document.getElementById('prof-photo').innerHTML = `${playerPhotoMarkup(found)}<span class="photo-fallback">#${found.number}</span>`;
+  document.getElementById('prof-name').innerText = found.name;
+  document.getElementById('prof-num').innerText = found.number;
+  document.getElementById('prof-pos').innerText = `${found.posLabel} (${found.role})`;
+  document.getElementById('prof-height').innerText = found.height;
+  document.getElementById('prof-curiosity').innerText = found.curiosity;
+  const teamOfPlayer = Object.keys(PLAYERS_DATA).find(t=>PLAYERS_DATA[t].some(p=>p.id===playerId));
+  document.getElementById('prof-team').innerText = `${TEAM_NAMES[teamOfPlayer]} High • #${found.number}`;
+  document.getElementById('prof-play-btn').innerText = `⚡ Ver Jogada: ${found.move}`;
+
+  const stats = getPlayerStats(found);
+  const statsList = document.getElementById('player-stats-list');
+  statsList.innerHTML = Object.entries(stats).map(([label, value])=>`
+    <div class="stat-row">
+      <span>${label}</span>
+      <div class="stat-track"><div class="stat-fill" data-stat-value="${value}"></div></div>
+      <span class="stat-value">${value}</span>
+    </div>
+  `).join('');
+
+  switchTab('profile');
+  statsList.querySelectorAll('.stat-fill').forEach(fill=>fill.style.width='0%');
+  setTimeout(()=>{
+    statsList.querySelectorAll('.stat-fill').forEach(fill=>{
+      fill.style.width = `${fill.dataset.statValue}%`;
+    });
+  },100);
+}
+
+function getPlayerStats(player){
+  const roleStats = {
+    S:  {Attack:70, Defense:78, Serve:82, Speed:84, Jump:72, Stamina:86},
+    OP: {Attack:94, Defense:62, Serve:85, Speed:78, Jump:92, Stamina:88},
+    MB: {Attack:88, Defense:76, Serve:70, Speed:79, Jump:94, Stamina:90},
+    WS: {Attack:86, Defense:80, Serve:78, Speed:84, Jump:88, Stamina:91},
+    L:  {Attack:54, Defense:98, Serve:58, Speed:94, Jump:62, Stamina:93}
+  };
+  const stats = {...(roleStats[player.role] || roleStats.WS)};
+  const adjustments = {
+    hinata: {Attack:92, Defense:68, Serve:60, Speed:99, Jump:98, Stamina:96},
+    kageyama: {Attack:78, Defense:82, Serve:93, Speed:91, Jump:76, Stamina:88},
+    nishinoya: {Attack:58, Defense:99, Serve:55, Speed:97, Jump:70, Stamina:95},
+    ushijima: {Attack:99, Defense:75, Serve:96, Speed:82, Jump:96, Stamina:94},
+    oikawa: {Attack:82, Defense:80, Serve:98, Speed:89, Jump:79, Stamina:90},
+    kenma: {Attack:62, Defense:86, Serve:64, Speed:72, Jump:58, Stamina:78}
+  };
+  return {...stats, ...(adjustments[player.id] || {})};
+}
+
+/* ============================================================
+   FAVORITOS + DIÁLOGO DE CONFIRMAÇÃO
+============================================================ */
+let pendingFavId = null;
+function saveFavorites(){
+  try{
+    localStorage.setItem('haikyuu-favorites', JSON.stringify(Object.values(PLAYERS_DATA).flat().filter(p=>p.fav).map(p=>p.id)));
+  }catch(error){}
+}
+function loadFavorites(){
+  try{
+    const saved = JSON.parse(localStorage.getItem('haikyuu-favorites') || '[]');
+    if (!Array.isArray(saved)) return;
+    Object.values(PLAYERS_DATA).flat().forEach(p=>{ p.fav = saved.includes(p.id); });
+  }catch(error){}
+}
+function updateProfileFavoriteButton(){
+  const button = document.getElementById('prof-fav-btn');
+  if (!button || !activePlayer) return;
+  button.innerText = activePlayer.fav ? '★' : '☆';
+  button.classList.toggle('active', activePlayer.fav);
+  button.setAttribute('aria-label', activePlayer.fav ? 'Remover dos favoritos' : 'Adicionar aos favoritos');
+}
+function toggleProfileFavorite(){
+  if (!activePlayer) return;
+  activePlayer.fav = !activePlayer.fav;
+  saveFavorites();
+  updateProfileFavoriteButton();
+  renderPlayersList();
+  renderFavoritesList();
+  showToast(`${activePlayer.name} ${activePlayer.fav ? 'adicionado aos' : 'removido dos'} favoritos!`);
+}
+function promptFavorite(playerId){
+  const p = findPlayer(playerId);
+  if (!p) return;
+  pendingFavId = playerId;
+  document.getElementById('confirm-title').innerText = p.fav ? 'Remover dos Favoritos?' : 'Adicionar aos Favoritos?';
+  document.getElementById('confirm-desc').innerText = p.fav
+    ? `Deseja remover ${p.name} da sua lista de favoritos?`
+    : `Deseja salvar ${p.name} na sua lista de favoritos?`;
+  document.getElementById('confirm-modal').classList.add('active');
+}
+document.getElementById('confirm-btn-action').addEventListener('click',()=>{
+  const match = pendingFavId ? findPlayer(pendingFavId) : null;
+  if (match){
+    match.fav = !match.fav;
+    saveFavorites();
+    showToast(`${match.name} ${match.fav ? 'adicionado aos' : 'removido dos'} favoritos!`);
+    if (activePlayer && activePlayer.id===match.id) updateProfileFavoriteButton();
+  }
+  pendingFavId = null;
+  closeModal('confirm-modal');
+  renderPlayersList();
+  renderFavoritesList();
+});
+function renderFavoritesList(){
+  const container = document.getElementById('favs-list');
+  container.innerHTML = '';
+  let allFavs = [];
+  Object.values(PLAYERS_DATA).forEach(team=>{ allFavs = allFavs.concat(team.filter(p=>p.fav)); });
+  if (allFavs.length===0){
+    container.innerHTML = `<div class="empty-state"><div class="emoji">🏐</div><p>Nenhum jogador favoritado ainda.</p><p style="font-size:12px;margin-top:4px;">Toque na estrela ★ de um jogador em "Times" para favoritar.</p></div>`;
+    return;
+  }
+  allFavs.forEach(p=>{
+    const card = document.createElement('div');
+    card.className = 'player-card interactive';
+    card.onclick = ()=>openProfile(p.id);
+    card.innerHTML = `${playerAvatarMarkup(p)}
+      <div><strong>${p.name}</strong><p style="font-size:12px;color:var(--text-sub);">${p.posLabel}</p></div>`;
+    container.appendChild(card);
+  });
+}
+function closeModal(id){ document.getElementById(id).classList.remove('active'); }
+
+/* ============================================================
+   BOTTOM SHEET — JOGADA PRINCIPAL (animação genérica por jogador)
+============================================================ */
+let playbookAnimationTimers = [];
+function stopPlaybookAnimation(){
+  playbookAnimationTimers.forEach(timer=>clearTimeout(timer));
+  playbookAnimationTimers = [];
+  const stage = document.getElementById('play-stage');
+  if (stage) stage.classList.remove('shake');
+}
+function openPlaybookSheet(){
+  stopPlaybookAnimation();
+  document.getElementById('play-title').innerText = activePlayer.move;
+  document.getElementById('play-sub').innerText = `Jogada marcante de ${activePlayer.name.split(' ')[0]} em ${activePlayer.phases.length} fases`;
+  const list = document.getElementById('phase-list');
+  list.replaceChildren();
+  activePlayer.phases.forEach((ph,i)=>{
+    const row = document.createElement('div');
+    row.className = 'phase-row';
+    row.id = `phase-row-${i}`;
+    row.innerHTML = `<div class="phase-dot"></div><span>Fase ${i+1}: ${ph[0]}</span>`;
+    list.appendChild(row);
+  });
+  document.getElementById('playbook-sheet').classList.add('active');
+  runPlaybookAnimation();
+}
+function closeBottomSheet(){
+  stopPlaybookAnimation();
+  document.getElementById('playbook-sheet').classList.remove('active');
+}
+
+function runPlaybookAnimation(){
+  stopPlaybookAnimation();
+  const ball = document.getElementById('play-ball');
+  const text = document.getElementById('play-text');
+  const stage = document.getElementById('play-stage');
+  const phases = activePlayer.phases;
+  document.querySelectorAll('.phase-row').forEach(r=>r.classList.remove('active'));
+
+  phases.forEach((ph, i)=>{
+    const timer = setTimeout(()=>{
+      const [label, left, bottom, scale] = ph;
+      text.innerText = `Fase ${i+1}: ${label}`;
+      ball.style.left = `${left}px`;
+      ball.style.bottom = `${bottom}px`;
+      ball.style.transform = `scale(${scale})`;
+      document.querySelectorAll('.phase-row').forEach(r=>r.classList.remove('active'));
+      const row = document.getElementById(`phase-row-${i}`);
+      if (row) row.classList.add('active');
+      if (i === phases.length - 2){
+        stage.classList.add('shake');
+        const shakeTimer = setTimeout(()=>stage.classList.remove('shake'),220);
+        playbookAnimationTimers.push(shakeTimer);
+      }
+    }, i*750);
+    playbookAnimationTimers.push(timer);
+  });
+}
+
+/* ============================================================
+   PRANCHETA — TÁTICAS POR ETAPAS
+============================================================ */
+function selectClipboardTeam(teamKey, btnEl){
+  clipboardTeam = teamKey;
+  document.getElementById('app-frame').className = `device-frame theme-${teamKey}`;
+  clipboardStep = 0;
+  stopClipboardPlayback();
+  document.querySelectorAll('.clipboard-tab').forEach(b=>b.classList.remove('active'));
+  if (btnEl) btnEl.classList.add('active');
+  renderClipboard();
+}
+function renderClipboard(){
+  const tactic = CLIPBOARD_TACTICS[clipboardTeam];
+  document.getElementById('clipboard-title').innerText = `Táticas de ${TEAM_NAMES[clipboardTeam]} High`;
+  document.getElementById('clipboard-tactic-pill').innerText = tactic.name;
+  document.getElementById('clipboard-tactic-name').innerText = tactic.name;
+  renderClipboardStep();
+}
+function renderClipboardStep(){
+  const tactic = CLIPBOARD_TACTICS[clipboardTeam];
+  const step = tactic.steps[clipboardStep];
+  const lineup = STARTING_LINEUP[clipboardTeam];
+  const court = document.getElementById('tactical-court');
+  const ids = Object.values(lineup);
+  court.querySelectorAll('.tactical-player,.tactical-label').forEach(element=>{
+    if (!ids.includes(element.dataset.playerId)) element.remove();
+  });
+  ids.forEach(id=>{
+    const player = findPlayer(id);
+    if (!player) return;
+    const pos = step.positions[id] || [50,50];
+    const roleClass = id===lineup.L ? 'libero' : id===lineup.S ? 'setter' : (player.role==='MB' ? 'attacker' : 'defender');
+    let marker = court.querySelector(`.tactical-player[data-player-id="${id}"]`);
+    let label = court.querySelector(`.tactical-label[data-player-id="${id}"]`);
+    if (!marker){
+      marker = document.createElement('div');
+      marker.className = `tactical-player ${roleClass}`;
+      marker.dataset.playerId = id;
+      marker.innerText = player.number;
+      marker.title = `${player.posLabel} (${player.name})`;
+      court.appendChild(marker);
+      label = document.createElement('div');
+      label.className = 'tactical-label';
+      label.dataset.playerId = id;
+      label.innerText = `${player.role} (${player.name.split(' ')[0]})`;
+      court.appendChild(label);
+    }
+    marker.classList.toggle('active-move', step.active===id);
+    marker.style.left = `${pos[0]}%`;
+    marker.style.top = `${pos[1]}%`;
+    label.style.left = `${pos[0]}%`;
+    label.style.top = `calc(${pos[1]}% + 19px)`;
+  });
+  document.getElementById('clipboard-step-badge').innerText = `Etapa ${clipboardStep+1} / ${tactic.steps.length}`;
+  document.getElementById('clipboard-step-caption').innerText = `${clipboardStep+1}. ${step.caption}`;
+  document.getElementById('clipboard-play-toggle').innerText = clipboardPlaying ? 'Ⅱ' : '▶';
+}
+function nextClipboardStep(){
+  const total = CLIPBOARD_TACTICS[clipboardTeam].steps.length;
+  clipboardStep = (clipboardStep + 1) % total;
+  renderClipboardStep();
+}
+function previousClipboardStep(){
+  const total = CLIPBOARD_TACTICS[clipboardTeam].steps.length;
+  clipboardStep = (clipboardStep - 1 + total) % total;
+  renderClipboardStep();
+}
+function toggleClipboardPlayback(){
+  if (clipboardPlaying) stopClipboardPlayback();
+  else startClipboardPlayback();
+}
+function startClipboardPlayback(){
+  clipboardPlaying = true;
+  renderClipboardStep();
+  clipboardTimer = setInterval(()=>nextClipboardStep(), 1800);
+}
+function stopClipboardPlayback(){
+  clipboardPlaying = false;
+  if (clipboardTimer){ clearInterval(clipboardTimer); clipboardTimer = null; }
+  const button = document.getElementById('clipboard-play-toggle');
+  if (button) button.innerText = '▶';
+}
+
+/* ============================================================
+   COACH — BASE OFFLINE DE HAikyuu!! E VÔLEI
+============================================================ */
+let coachConversation = [];
+let coachRequestBusy = false;
+function sendChatMessage(){
+  const input = document.getElementById('chat-input');
+  const text = input.value.trim();
+  if (!text || coachRequestBusy) return;
+  const box = document.getElementById('chat-box');
+  coachRequestBusy = true;
+
+  const uMsg = document.createElement('div');
+  uMsg.className = 'chat-bubble user';
+  uMsg.innerText = text;
+  box.appendChild(uMsg);
+  input.value = '';
+  coachConversation.push({role:'user', content:text});
+
+  const typing = document.createElement('div');
+  typing.className = 'typing-indicator';
+  typing.innerHTML = `<div class="dot"></div><div class="dot"></div><div class="dot"></div>`;
+  box.appendChild(typing);
+  box.scrollTop = box.scrollHeight;
+
+  setTimeout(()=>{
+    typing.remove();
+    const answer = generateCoachReply(text);
+    coachConversation.push({role:'assistant', content:answer});
+    const aiMsg = document.createElement('div');
+    aiMsg.className = 'chat-bubble ai';
+    aiMsg.innerText = answer;
+    box.appendChild(aiMsg);
+    box.scrollTop = box.scrollHeight;
+    coachRequestBusy = false;
+  }, 450);
+}
+function normalizeCoachText(value){
+  return value.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+}
+const COACH_KNOWLEDGE = [
+  {keys:['todos os times','cada time','times de haikyuu','times principais','elencos'], answer:'Os quatro times cadastrados são: Karasuno, conhecido pela velocidade; Nekoma, especialista em defesa e estratégia; Aoba Johsai, forte na distribuição e no saque; e Shiratorizawa, baseado em potência e eficiência. Pergunte pelo nome de um time para ver todos os seus personagens principais.'},
+  {keys:['personagens principais de karasuno','jogadores de karasuno','time de karasuno','elenco de karasuno'], answer:'Os principais jogadores de Karasuno são: Daichi Sawamura, capitão e ponteiro; Koushi Sugawara, levantador reserva; Asahi Azumane, o ás e ponteiro; Yu Nishinoya, líbero; Ryunosuke Tanaka, ponteiro; Chikara Ennoshita, ponteiro e futuro capitão; Hisashi Kinoshita, ponteiro; Kazuhito Narita, central; Tobio Kageyama, levantador; Shoyo Hinata, central de velocidade; Kei Tsukishima, central de bloqueio; e Tadashi Yamaguchi, especialista em saque.'},
+  {keys:['personagens principais de nekoma','jogadores de nekoma','time de nekoma','elenco de nekoma'], answer:'Os principais jogadores de Nekoma são: Tetsuro Kuroo, capitão e central; Morisuke Yaku, líbero; Taketora Yamamoto, ponteiro e atacante; Lev Haiba, central; Kenma Kozume, levantador e estrategista; Shohei Fukunaga, ponteiro; Sou Inuoka, central; e Yuki Shibayama, líbero reserva.'},
+  {keys:['personagens principais de aoba','jogadores de aoba','personagens de aoba johsai','elenco de aoba'], answer:'Os principais jogadores de Aoba Johsai são: Tooru Oikawa, capitão e levantador; Hajime Iwaizumi, ponteiro e ás; Issei Matsukawa, central; Takahiro Hanamaki, ponteiro; Shinji Watari, líbero; Yutaro Kindaichi, central; Akira Kunimi, central; e Kentaro Kyotani, ponteiro de ataque explosivo.'},
+  {keys:['personagens principais de shiratorizawa','jogadores de shiratorizawa','time de shiratorizawa','elenco de shiratorizawa'], answer:'Os principais jogadores de Shiratorizawa são: Wakatoshi Ushijima, capitão, ponteiro e ás canhoto; Eita Semi, levantador; Satori Tendo, central e bloqueador; Tsutomu Goshiki, ponteiro; Kenjiro Shirabu, levantador titular; Reon Ohira, ponteiro; Taichi Kawanishi, central; e Hayato Yamagata, especialista em defesa.'},
+  {keys:['quem e hinata','quem é hinata','shoyo hinata'], answer:'Shoyo Hinata é o protagonista de Haikyuu!!. Ele começa com pouca experiência e baixa estatura, mas compensa com velocidade, impulsão, coragem e enorme capacidade de evolução. Em Karasuno, atua como central e se torna especialista em ataques rápidos.'},
+  {keys:['quem e kageyama','quem é kageyama','tobio kageyama'], answer:'Tobio Kageyama é um levantador extremamente preciso, apelidado de Rei da Quadra. No início, tem dificuldade para trabalhar em equipe, mas aprende a adaptar seus levantamentos aos companheiros. Sua parceria com Hinata é o centro do Ataque Rápido Relâmpago.'},
+  {keys:['tipos de saque','tipos de servico','tipos de serviço','saques do volei','saques do vôlei'], answer:'Os principais tipos de saque são: saque por baixo, indicado para iniciantes; saque por cima, mais controlado; saque flutuante, com pouca rotação e trajetória instável; saque viagem ou jump serve, feito com salto e potência; e saque lateral, que cria ângulos diferentes. A escolha depende do nível, do alvo e do risco que a equipe quer assumir.'},
+  {keys:['saque viagem','jump serve','saque com salto'], answer:'O saque viagem, também chamado de jump serve, é feito com lançamento alto, corrida de aproximação, salto e contato forte no ponto mais alto. Ele gera velocidade e pode receber topspin, fazendo a bola cair rapidamente. Exige coordenação e consistência; se o lançamento sair errado, o saque perde potência ou vai para fora.'},
+  {keys:['saque flutuante','float serve','flutuante'], answer:'O saque flutuante é golpeado com a mão firme no centro da bola, com pouca ou nenhuma rotação. Como a bola não gira de forma estável, ela pode mudar de direção no ar e dificultar a recepção. É menos potente que o saque viagem, mas muito eficiente quando colocado em zonas de conflito.'},
+  {keys:['saque por baixo','saque inferior'], answer:'O saque por baixo é o mais simples para iniciantes. O jogador segura a bola à frente do corpo e golpeia sua parte inferior com a mão ou o punho. É seguro e fácil de controlar, mas costuma ser mais lento e previsível em níveis competitivos.'},
+  {keys:['saque por cima','saque superior'], answer:'No saque por cima, a bola é lançada acima da cabeça e golpeada com a mão aberta. Ele permite mais velocidade, direção e variações de efeito do que o saque por baixo. É a base para aprender o saque flutuante e o saque viagem.'},
+  {keys:['topspin','efeito no saque','rotacao da bola','rotação da bola'], answer:'O topspin faz a bola girar para frente. Esse efeito acelera a queda da bola, permitindo bater com força e ainda fazê-la cair dentro da quadra. É muito usado no saque viagem e em ataques.'},
+  {keys:['toque','passe','levantamento de toque'], answer:'O toque é feito com as pontas dos dedos acima da testa, usando pernas e braços juntos para direcionar a bola. Ele é usado principalmente pelo levantador, mas qualquer jogador pode executar um toque legal se mantiver contato limpo e controlado.'},
+  {keys:['cobertura','cobrir o ataque'], answer:'Cobertura é o posicionamento dos companheiros ao redor do atacante para recuperar uma bola que bate no bloqueio e volta. Ela exige antecipação: os defensores acompanham o atacante e ocupam os espaços próximos, prontos para fazer uma segunda jogada.'},
+  {keys:['conducao','condução','dois toques','dois toques seguidos'], answer:'Condução acontece quando a bola é carregada, segurada ou acompanhada em vez de ser tocada de forma rápida. Dois toques acontecem quando o mesmo jogador toca a bola duas vezes seguidas, salvo situações específicas do bloqueio. O árbitro avalia se o contato foi limpo.'},
+  {keys:['invasao','invasão','tocar na rede','tocar a rede'], answer:'É falta tocar a rede durante a ação de jogar a bola. Também é invasão colocar o pé completamente além da linha central ou atrapalhar o adversário por baixo da rede. O jogador pode passar parte do pé sobre a linha, desde que ainda mantenha contato com ela e não interfira na jogada.'},
+  {keys:['ace','ponto de saque'], answer:'Ace é o ponto marcado diretamente no saque: a bola toca o chão sem ser defendida, sai após um toque ruim ou causa uma falta de recepção. Um saque que não gera ace ainda pode ser muito valioso se quebrar o sistema ofensivo adversário.'},
+  {keys:['dupla','dupla de ataque','combinação de ataque'], answer:'Uma combinação de ataque usa movimentos coordenados para confundir o bloqueio. Um atacante pode fazer uma corrida falsa enquanto outro recebe o levantamento, criando uma situação de bloqueio simples. O Ataque Rápido Relâmpago de Hinata e Kageyama é um exemplo dramático desse princípio.'},
+  {keys:['regra','regras','pontuacao','pontuação','pontos','set','partida'], answer:'No vôlei, cada rally vale um ponto. Uma equipe pode dar até três toques antes de devolver a bola; o bloqueio não conta como um desses três toques. Um set normalmente vai até 25 pontos, com vantagem de dois. O quinto set, quando necessário, vai até 15, também com dois de vantagem.'},
+  {keys:['posicao','posições','posicoes','funcao','função','jogam em quadra'], answer:'As seis funções mais comuns são: levantador, oposto, ponteiro, central e líbero. O levantador organiza o ataque; o oposto é uma grande opção ofensiva; os ponteiros atacam e ajudam na recepção; os centrais bloqueiam e atacam bolas rápidas; o líbero é especialista em defesa e recepção.'},
+  {keys:['rodizio','rodízio','rotacao','rotação'], answer:'Quando a equipe que estava recebendo vence o rally, ela ganha o direito de sacar e gira uma posição no sentido horário. Depois do saque, os jogadores podem se movimentar para suas funções, respeitando a ordem correta no momento do saque.'},
+  {keys:['libero','líbero'], answer:'O líbero usa uma camisa diferente e é especialista em recepção e defesa. Ele pode substituir jogadores do fundo sem contar como uma substituição comum, mas não pode bloquear, tentar bloquear ou atacar uma bola completamente acima da rede.'},
+  {keys:['bloqueio','bloquear','block'], answer:'O bloqueio tenta parar ou desviar o ataque adversário. O jogador deve acompanhar o levantador, ler o braço do atacante, saltar com os braços invadindo o espaço da rede sem tocar nela e fechar o melhor ângulo. O bloqueio também orienta a defesa atrás dele.'},
+  {keys:['defesa','defender','recepcao','recepção','manchete'], answer:'A defesa começa com uma boa posição: joelhos flexionados, tronco inclinado e olhos na trajetória da bola. Na manchete, os braços ficam unidos e a plataforma direciona a bola ao levantador. O objetivo é controlar a bola, não apenas rebatê-la.'},
+  {keys:['saque','servico','serviço'], answer:'O saque inicia o rally e pode ser flutuante, viagem ou por baixo. O flutuante tem pouca rotação e muda de direção; o viagem usa salto e potência; o saque por baixo é mais simples e seguro para iniciantes. Mire espaços entre recebedores ou zonas de maior dificuldade.'},
+  {keys:['levantamento','levantador','setter'], answer:'O levantador é o cérebro do ataque. Ele transforma a recepção em uma bola atacável, escolhe quem está em melhor condição e varia velocidade, altura e direção. Kageyama é conhecido pela precisão e Oikawa pela leitura, distribuição e capacidade de potencializar seus atacantes.'},
+  {keys:['ataque','atacar','cortada','cravada','spike'], answer:'Um ataque eficiente combina aproximação, salto, braço rápido e direção. O atacante deve observar o bloqueio e escolher entre bater forte, explorar as mãos do bloqueador, atacar na diagonal, na paralela ou usar uma largada.'},
+  {keys:['ataque rapido','ataque rápido','quick','tempo rapido','tempo rápido','combinacao','combinação'], answer:'O ataque rápido é executado quase junto do levantamento. O atacante começa a aproximação e salta no tempo combinado, enquanto o levantador envia uma bola curta e veloz. Em Haikyuu!!, Hinata e Kageyama levam esse sincronismo ao extremo no Ataque Rápido Relâmpago.'},
+  {keys:['treino','treinar','melhorar','evoluir'], answer:'Para evoluir no vôlei, treine recepção, manchete, toque, saque, deslocamento e impulsão. Faça exercícios de repetição com alvo, treine a comunicação e grave seus movimentos. No ataque, pratique diferentes direções; na defesa, trabalhe leitura e tempo de reação.'},
+  {keys:['altura da rede','rede','quadra','tamanho'], answer:'A quadra oficial mede 18 por 9 metros. A rede masculina fica a 2,43 m e a feminina a 2,24 m. A linha de ataque fica a 3 m da linha central, separando a zona de frente da zona de trás.'},
+  {keys:['haikyuu','anime','manga','mangá','historia','história'], answer:'Haikyuu!! acompanha Shoyo Hinata, um estudante baixo que sonha em ser um grande jogador depois de assistir ao Pequeno Gigante. Em Karasuno, ele forma uma dupla improvável com Tobio Kageyama. A série combina rivalidade, evolução, trabalho em equipe e explicações muito boas sobre vôlei.'},
+  {keys:['karasuno'], answer:'Karasuno é o time principal de Haikyuu!!. Conhecido como os Corvos, o time mistura velocidade e criatividade. Seus destaques incluem Hinata, Kageyama, Daichi, Sugawara, Asahi, Tanaka, Nishinoya e Tsukishima.'},
+  {keys:['nekoma'], answer:'Nekoma é o rival tradicional de Karasuno. Conhecido como os Gatos, joga com defesa, paciência e controle. Kenma é o estrategista e Kuroo lidera o bloqueio. A rivalidade entre os dois times é chamada de Batalha do Lixão.'},
+  {keys:['aoba johsai','aoba','seijoh'], answer:'Aoba Johsai, também chamado de Seijoh, é liderado por Tooru Oikawa. O time se destaca pela distribuição do levantador, saque forte e organização coletiva. Iwaizumi é o principal parceiro e atacante de Oikawa.'},
+  {keys:['shiratorizawa'], answer:'Shiratorizawa é um time poderoso e direto, baseado em força e eficiência. Ushijima é o grande atacante canhoto, enquanto Tendo se destaca pelo bloqueio de leitura. O time representa disciplina, potência e pressão constante.'},
+  {keys:['treinador','coach','tatico','tática','tatico'], answer:'Uma boa tática de vôlei começa identificando o ponto fraco adversário: recepção, bloqueio ou cobertura. Depois, a equipe combina alvos de saque, velocidade de levantamento, jogadas de combinação e posicionamento defensivo.'}
+];
+function getPlayerByQuestion(lower){
+  const allPlayers = Object.values(PLAYERS_DATA).flat();
+  return allPlayers.find(p=>{
+    const fullName = normalizeCoachText(p.name);
+    const firstName = fullName.split(' ')[0];
+    return lower.includes(fullName) || lower.includes(firstName) || lower.includes(p.id);
+  });
+}
+function generateCoachReply(text){
+  const lower = normalizeCoachText(text);
+  const mentioned = getPlayerByQuestion(lower);
+  if (mentioned){
+    const team = Object.keys(PLAYERS_DATA).find(teamKey=>PLAYERS_DATA[teamKey].some(p=>p.id===mentioned.id));
+    const stats = getPlayerStats(mentioned);
+    if (lower.includes('estat') || lower.includes('atribut') || lower.includes('numero') || lower.includes('número')){
+      return `${mentioned.name} é ${mentioned.posLabel} do ${TEAM_NAMES[team]}. Atributos: ataque ${stats.Attack}, defesa ${stats.Defense}, saque ${stats.Serve}, velocidade ${stats.Speed}, pulo ${stats.Jump} e stamina ${stats.Stamina}.`;
+    }
+    if (lower.includes('jogada') || lower.includes('movimento') || lower.includes('tecnica') || lower.includes('técnica')){
+      return `A jogada principal de ${mentioned.name} é “${mentioned.move}”. Para executá-la, ele precisa combinar tempo, posicionamento, leitura da defesa e precisão. ${mentioned.curiosity}`;
+    }
+    if (lower.includes('posicao') || lower.includes('posição') || lower.includes('funcao') || lower.includes('função')){
+      return `${mentioned.name} atua como ${mentioned.posLabel} no ${TEAM_NAMES[team]}. Essa posição exige ${mentioned.role==='S'?'leitura, precisão e distribuição do jogo':mentioned.role==='L'?'recepção, defesa e reflexos':'ataque, deslocamento e participação no bloqueio'}.`;
+    }
+    return `${mentioned.name} joga como ${mentioned.posLabel} no ${TEAM_NAMES[team]}. Sua jogada principal é “${mentioned.move}”. Curiosidade: ${mentioned.curiosity}`;
+  }
+  const matched = COACH_KNOWLEDGE.find(item=>item.keys.some(key=>lower.includes(normalizeCoachText(key))));
+  if (matched) return matched.answer;
+  if (lower.includes('jogador') || lower.includes('atleta') || lower.includes('personagem')){
+    return 'Posso falar sobre Hinata, Kageyama, Nishinoya, Daichi, Asahi, Tsukishima, Kenma, Kuroo, Oikawa, Iwaizumi, Ushijima e muitos outros. Diga o nome do jogador ou pergunte sobre posição, atributos e jogada.';
+  }
+  return 'Ainda não encontrei essa pergunta na minha base, mas posso responder sobre Haikyuu!!, jogadores, times, posições, regras, saque, recepção, levantamento, ataque, bloqueio, rodízio e treinamento. Tente escrever a pergunta de outro jeito.';
+}
+
+/* ============================================================
+   TOASTS E MODAL DE REDE
+============================================================ */
+function showToast(msg){
+  const area = document.getElementById('toast-area');
+  const toast = document.createElement('div');
+  toast.className = 'toast';
+  toast.innerHTML = `<span>🏐</span><div style="flex:1;font-size:12px;">${msg}</div><div class="toast-progress"></div>`;
+  area.appendChild(toast);
+  setTimeout(()=>{ toast.classList.add('toast-out'); setTimeout(()=>toast.remove(),300); }, 4000);
+}
+function retryConnection(){
+  const icon = document.getElementById('alert-icon');
+  icon.style.transition = 'transform 1s linear';
+  icon.style.transform = 'rotate(360deg)';
+  setTimeout(()=>{ closeModal('alert-modal'); showToast('Conexão restabelecida com a quadra!'); }, 1000);
+}
+
+/* ============================================================
+   HOME: DESTAQUES DINÂMICOS
+============================================================ */
+function renderHomeHighlights(){
+  const ids = ['hinata','kageyama','oikawa','ushijima','kenma'];
+  const container = document.getElementById('home-highlights');
+  container.innerHTML = ids.map(id=>{
+    const p = findPlayer(id);
+    const team = Object.keys(PLAYERS_DATA).find(t=>PLAYERS_DATA[t].some(pl=>pl.id===id));
+    return `<div class="home-card interactive" onclick="openProfile('${id}')">
+      <div class="home-badge photo-wrap">${playerPhotoMarkup(p)}<span class="photo-fallback">#${p.number}</span></div>
+      <strong style="font-size:13px;">${p.name}</strong>
+      <p style="font-size:11px;color:var(--text-sub);">${p.posLabel} / ${TEAM_NAMES[team]}</p>
+    </div>`;
+  }).join('');
+}
+
+/* ============================================================
+   INICIALIZAÇÃO
+============================================================ */
+window.addEventListener('DOMContentLoaded', ()=>{
+  loadFavorites();
+  runSplashScreen();
+  renderHomeHighlights();
+  renderCourt();
+  renderPlayersList();
+});
+</script>
+</body>
+</html>
